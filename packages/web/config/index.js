@@ -7,6 +7,8 @@ const config = {
   cache: {
     enable: false
   },
+  sourceRoot: 'src',       // ← 加这个
+  outputRoot: 'dist',      // ← 加这个
   mini: {
     postcss: {
       pxtransform: {

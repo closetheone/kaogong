@@ -1,0 +1,89 @@
+.practice {
+  padding: 30px;
+  min-height: 100vh;
+  background: #f5f5f5;
+
+  .header {
+    margin-bottom: 40px;
+
+    .title {
+      font-size: 40px;
+      font-weight: bold;
+      color: #333;
+      display: block;
+      margin-bottom: 12px;
+    }
+
+    .subtitle {
+      font-size: 28px;
+      color: #666;
+      display: block;
+    }
+  }
+
+  .category-list {
+    margin-bottom: 40px;
+
+    .category-card {
+      display: flex;
+      align-items: center;
+      background: #fff;
+      border-radius: 16px;
+      padding: 30px;
+      margin-bottom: 24px;
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+
+      .category-icon {
+        font-size: 48px;
+        margin-right: 24px;
+      }
+
+      .category-info {
+        flex: 1;
+
+        .category-name {
+          font-size: 32px;
+          color: #333;
+          font-weight: bold;
+          display: block;
+          margin-bottom: 8px;
+        }
+
+        .category-count {
+          font-size: 26px;
+          color: #999;
+          display: block;
+        }
+      }
+
+      .category-arrow {
+        font-size: 40px;
+        color: #ccc;
+      }
+    }
+  }
+
+  .tips {
+    background: #fff;
+    border-radius: 16px;
+    padding: 30px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+
+    .tips-title {
+      font-size: 30px;
+      font-weight: bold;
+      color: #333;
+      display: block;
+      margin-bottom: 20px;
+    }
+
+    .tips-content {
+      text {
+        font-size: 28px;
+        line-height: 1.8;
+        color: #666;
+        display: block;
+      }
+    }
+  }
+}
