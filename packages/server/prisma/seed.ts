@@ -24,7 +24,33 @@ interface RawQuestion {
  * 1. 如果只有 A 但内容里包含 B./C./D.，拆分出来
  * 2. 每个选项去掉前缀 "A." "A、" 等
  * 3. 截断选项里混入的其他选项文本
+ *
+ * 同时从 content 末尾移除选项部分，避免 content 重复显示选项
  */
+function splitOptionsAndStrip(
+  raw: Record<string, string>,
+  content: string,
+): { options: Record<string, string>; strippedContent: string } {
+  let options = splitOptions(raw, content)
+  let strippedContent = content
+
+  // 如果从 content 末尾成功提取到了 4 个选项，把选项部分从 content 中移除
+  if (Object.keys(options).length >= 4) {
+    // 找到 content 里最后一个 "A." 的位置作为选项起始点
+    const lastA = content.search(/[\n\s][A][\.、．]\s*[^\n]*$/) // 末尾的 A.xxx
+    const match = content.match(/[\n\s][A][\.、．][\s\S]*$/)
+    if (match && match.index !== undefined) {
+      // 检查匹配到的内容是否包含 B./C./D.
+      const tail = content.slice(match.index)
+      if (/[B-F][\.、．]/.test(tail)) {
+        strippedContent = content.slice(0, match.index).trim()
+      }
+    }
+  }
+
+  return { options, strippedContent }
+}
+
 function splitOptions(raw: Record<string, string>, content: string): Record<string, string> {
   const allKeys = ['A', 'B', 'C', 'D', 'E', 'F']
   const result: Record<string, string> = {}
@@ -155,8 +181,17 @@ async function importFromJson(filePath: string) {
         continue
       }
 
-      // 智能拆分选项
-      const cleanedOptions = splitOptions(q.options || {}, q.content || '')
+      // 智能拆分选项 + 从 content 中提取选项文字
+      const { options: cleanedOptions, strippedContent } = splitOptionsAndStrip(
+        q.options || {},
+        q.content || '',
+      )
+
+      // 跳过坏题（选项数 < 2 或题干太短）
+      if (Object.keys(cleanedOptions).length < 2 || strippedContent.trim().length < 10) {
+        skipped++
+        continue
+      }
 
       // 清洗解析
       let explanation = (q.explanation || '')
@@ -177,7 +212,7 @@ async function importFromJson(filePath: string) {
           subCategory: q.subCategory || null,
           number: q.number || 0,
           difficulty: q.difficulty || 3,
-          content: cleanText(q.content),
+          content: cleanText(strippedContent),
           options: JSON.stringify(cleanedOptions),
           answer: q.answer,
           explanation,
