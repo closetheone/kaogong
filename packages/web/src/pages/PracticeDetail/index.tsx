@@ -21,19 +21,9 @@ import type { Question } from '@/types'
 import { questionApi } from '@/utils/request'
 import { usePracticeStore } from '@/store/usePracticeStore'
 import { useUserStore } from '@/store/useUserStore'
+import { cleanQuestions } from '@/utils/cleanOptions'
 
 const QUESTIONS_PER_SESSION = 10
-
-function cleanOptionText(text: string, currentKey: string, allKeys: string[]): string {
-  let t = String(text).replace(/\s+/g, ' ').trim()
-  t = t.replace(new RegExp(`^${currentKey}[\\.\\s、]*`), '')
-  for (const k of allKeys) {
-    if (k === currentKey) continue
-    const idx = t.search(new RegExp(`\\s+${k}[\\.\\s、]`))
-    if (idx > 0) t = t.substring(0, idx).trim()
-  }
-  return t
-}
 
 export default function PracticeDetail() {
   const { category = '' } = useParams()
@@ -84,7 +74,7 @@ export default function PracticeDetail() {
         data = []
       }
     }
-    setQuestions(data)
+    setQuestions(cleanQuestions(data))
     setLoading(false)
     setElapsed(0)
   }, [category, categoryName])
@@ -242,7 +232,7 @@ export default function PracticeDetail() {
             {/* 选项 */}
             <div className="space-y-2.5 mb-6">
               {availableKeys.map((key) => {
-                const text = cleanOptionText(currentQ.options[key], key, availableKeys)
+                const text = String(currentQ.options?.[key] || '').replace(/\s+/g, ' ').trim()
                 const isSelected = currentAnswer === key
                 const isCorrect = isSubmitted && key === currentQ.answer
                 const isWrong = isSubmitted && isSelected && key !== currentQ.answer
