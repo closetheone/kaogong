@@ -5,3 +5,5 @@ dist/
 .DS_Store
 .swc/
 project.private.config.json
+tsconfig.tsbuildinfo
+.tsbuildinfo

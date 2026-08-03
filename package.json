@@ -2,12 +2,15 @@
   "name": "kaogong",
   "version": "1.0.0",
   "private": true,
-  "description": "\u8003\u516c\u667a\u80fd\u52a9\u624b - \u4e00\u7ad9\u5f0f\u667a\u80fd\u5907\u8003\u5de5\u5177",
+  "description": "考公智能助手 - 一站式智能备考工具",
   "scripts": {
+    "dev": "pnpm --filter @kaogong/web dev",
     "dev:server": "pnpm --filter @kaogong/server dev",
-    "dev:web": "pnpm --filter @kaogong/web dev:weapp",
+    "dev:web": "pnpm --filter @kaogong/web dev",
+    "build": "pnpm --filter @kaogong/web build",
     "build:server": "pnpm --filter @kaogong/server build",
-    "build:web": "pnpm --filter @kaogong/web build:weapp",
+    "build:web": "pnpm --filter @kaogong/web build",
+    "preview": "pnpm --filter @kaogong/web preview",
     "db:generate": "pnpm --filter @kaogong/server prisma:generate",
     "db:push": "pnpm --filter @kaogong/server prisma:push",
     "db:seed": "pnpm --filter @kaogong/server prisma:seed"
@@ -23,13 +26,8 @@
       "@prisma/client",
       "@prisma/engines",
       "@swc/core",
-      "@tarojs/binding",
-      "@tarojs/cli",
-      "core-js",
-      "core-js-pure",
       "esbuild",
-      "prisma",
-      "swiper"
+      "prisma"
     ]
   }
 }
