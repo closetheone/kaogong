@@ -6,6 +6,7 @@ import { PracticeModule } from './practice/practice.module';
 import { WrongQuestionModule } from './wrong-question/wrong-question.module';
 import { MockExamModule } from './mock-exam/mock-exam.module';
 import { AiModule } from './ai/ai.module';
+import { CrawlerModule } from './crawler/crawler.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { AiModule } from './ai/ai.module';
     WrongQuestionModule,
     MockExamModule,
     AiModule,
+    CrawlerModule,
   ],
 })
 export class AppModule {}

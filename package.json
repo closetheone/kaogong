@@ -13,7 +13,8 @@
     "preview": "pnpm --filter @kaogong/web preview",
     "db:generate": "pnpm --filter @kaogong/server prisma:generate",
     "db:push": "pnpm --filter @kaogong/server prisma:push",
-    "db:seed": "pnpm --filter @kaogong/server prisma:seed"
+    "db:seed": "pnpm --filter @kaogong/server prisma:seed",
+    "crawl": "cd packages/server && npx ts-node --compiler-options {\"module\":\"commonjs\"} crawler/cli.ts"
   },
   "engines": {
     "node": ">=18.0.0",
