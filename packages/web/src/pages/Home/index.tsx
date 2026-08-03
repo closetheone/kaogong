@@ -7,75 +7,64 @@ import {
   Calendar,
   BarChart3,
   Trophy,
-  ChevronRight,
   ArrowRight,
   Flame,
-  Quote,
+  TrendingUp,
+  Target,
+  CheckCircle2,
+  Clock,
+  Brain,
+  FileQuestion,
 } from 'lucide-react'
-import { Card, CardContent } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Progress } from '@/components/ui/progress'
 import { usePracticeStore } from '@/store/usePracticeStore'
 import { useUserStore } from '@/store/useUserStore'
 import { cn } from '@/lib/utils'
 
-const features = [
-  {
-    icon: BookOpen,
-    title: '专项刷题',
-    desc: '按模块精练',
-    to: '/practice',
-    color: 'text-indigo-600',
-    bg: 'bg-indigo-50',
-  },
-  {
-    icon: XCircle,
-    title: '错题本',
-    desc: '查漏补缺',
-    to: '/wrong',
-    color: 'text-rose-600',
-    bg: 'bg-rose-50',
-  },
-  {
-    icon: Timer,
-    title: '模拟考试',
-    desc: '限时模考',
-    to: '',
-    color: 'text-amber-600',
-    bg: 'bg-amber-50',
-  },
-  {
-    icon: BarChart3,
-    title: '学习报告',
-    desc: '数据分析',
-    to: '',
-    color: 'text-emerald-600',
-    bg: 'bg-emerald-50',
-  },
-  {
-    icon: Calendar,
-    title: '学习计划',
-    desc: '科学规划',
-    to: '',
-    color: 'text-violet-600',
-    bg: 'bg-violet-50',
-  },
-  {
-    icon: Trophy,
-    title: '排行榜',
-    desc: '考友PK',
-    to: '',
-    color: 'text-pink-600',
-    bg: 'bg-pink-50',
-  },
-]
-
 const subjects = [
-  { name: '常识判断', desc: '政治·法律·经济·历史', key: '常识判断', color: 'from-amber-400 to-orange-500' },
-  { name: '言语理解', desc: '逻辑填空·片段阅读', key: '言语理解', color: 'from-blue-400 to-indigo-500' },
-  { name: '数量关系', desc: '数学运算·数推', key: '数量关系', color: 'from-violet-400 to-purple-500' },
-  { name: '判断推理', desc: '图推·定义·类比·逻辑', key: '判断推理', color: 'from-emerald-400 to-teal-500' },
-  { name: '资料分析', desc: '文字·表格·图表', key: '资料分析', color: 'from-rose-400 to-pink-500' },
+  {
+    name: '常识判断',
+    key: '常识判断',
+    desc: '政治·法律·经济·历史',
+    emoji: '💡',
+    color: 'bg-amber-500',
+    progress: 0,
+  },
+  {
+    name: '言语理解与表达',
+    key: '言语理解',
+    desc: '逻辑填空·片段阅读',
+    emoji: '📖',
+    color: 'bg-blue-500',
+    progress: 0,
+  },
+  {
+    name: '数量关系',
+    key: '数量关系',
+    desc: '数学运算·数字推理',
+    emoji: '🔢',
+    color: 'bg-violet-500',
+    progress: 0,
+  },
+  {
+    name: '判断推理',
+    key: '判断推理',
+    desc: '图推·定义·类比·逻辑',
+    emoji: '🧠',
+    color: 'bg-emerald-500',
+    progress: 0,
+  },
+  {
+    name: '资料分析',
+    key: '资料分析',
+    desc: '文字·表格·图表',
+    emoji: '📊',
+    color: 'bg-rose-500',
+    progress: 0,
+  },
 ]
 
 export default function Home() {
@@ -84,11 +73,14 @@ export default function Home() {
   const { nickname, targetExam } = useUserStore()
   const [todayCount, setTodayCount] = useState(0)
   const [streakDays, setStreakDays] = useState(0)
+  const [weeklyData, setWeeklyData] = useState<{ day: string; count: number }[]>([])
 
   useEffect(() => {
-    const today = new Date().toDateString()
-    setTodayCount(records.filter((r) => new Date(r.answeredAt).toDateString() === today).length)
+    const today = new Date()
+    const todayStr = today.toDateString()
+    setTodayCount(records.filter((r) => new Date(r.answeredAt).toDateString() === todayStr).length)
 
+    // 连续打卡
     const days = new Set(records.map((r) => new Date(r.answeredAt).toDateString()))
     let streak = 0
     const d = new Date()
@@ -97,159 +89,277 @@ export default function Home() {
       d.setDate(d.getDate() - 1)
     }
     setStreakDays(streak)
+
+    // 最近7天数据
+    const week = []
+    for (let i = 6; i >= 0; i--) {
+      const day = new Date()
+      day.setDate(day.getDate() - i)
+      const dayStr = day.toDateString()
+      const count = records.filter((r) => new Date(r.answeredAt).toDateString() === dayStr).length
+      week.push({
+        day: ['日', '一', '二', '三', '四', '五', '六'][day.getDay()],
+        count,
+      })
+    }
+    setWeeklyData(week)
   }, [records])
 
   const total = records.length
   const correct = records.filter((r) => r.isCorrect).length
   const accuracy = total > 0 ? Math.round((correct / total) * 100) : 0
+  const wrong = records.filter((r) => !r.isCorrect).length
+
+  const maxWeekCount = Math.max(...weeklyData.map((d) => d.count), 10)
 
   return (
-    <div className="mx-auto max-w-6xl p-4 md:p-8 space-y-6">
-      {/* Hero */}
-      <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-primary via-violet-600 to-purple-600 text-primary-foreground shadow-xl">
-        <div className="absolute -top-20 -right-20 w-72 h-72 rounded-full bg-white/10 blur-3xl" />
-        <div className="absolute -bottom-10 -left-10 w-44 h-44 rounded-full bg-pink-400/20 blur-2xl" />
-        <CardContent className="relative p-6 md:p-10">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-            <div>
-              <div className="flex items-center gap-2 text-sm opacity-80 mb-2">
-                <span>👋 你好，{nickname}</span>
-                {streakDays > 0 && (
-                  <Badge className="bg-white/20 text-white border-0 gap-1">
-                    <Flame className="h-3 w-3" />
-                    连续 {streakDays} 天
-                  </Badge>
-                )}
-              </div>
-              <h1 className="text-2xl md:text-4xl font-bold tracking-tight mb-2">
-                {targetExam}
-              </h1>
-              <p className="text-sm md:text-base opacity-80 max-w-md">
-                {streakDays > 0 ? '坚持就是胜利，今天继续刷题吧 💪' : '今天还没开始，来练一组热身 💪'}
-              </p>
+    <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-6">
+      {/* Welcome strip */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight">
+            你好，{nickname} <span className="text-muted-foreground font-normal text-base">👋</span>
+          </h2>
+          <p className="text-sm text-muted-foreground mt-1">
+            {targetExam} ·
+            {streakDays > 0 ? (
+              <span className="text-amber-600 ml-1">
+                <Flame className="inline h-3.5 w-3.5 -mt-0.5" /> 已连续打卡 {streakDays} 天
+              </span>
+            ) : (
+              <span className="ml-1">今天还没开始，加油！</span>
+            )}
+          </p>
+        </div>
+        <Button onClick={() => nav('/practice')} size="sm" className="gap-1.5">
+          开始刷题 <ArrowRight className="h-3.5 w-3.5" />
+        </Button>
+      </div>
+
+      {/* Stats Grid */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card>
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between">
+              <div className="text-xs font-medium text-muted-foreground">今日刷题</div>
+              <Calendar className="h-4 w-4 text-muted-foreground" />
+            </div>
+            <div className="mt-2 flex items-baseline gap-1">
+              <span className="text-3xl font-bold tabular-nums">{todayCount}</span>
+              <span className="text-sm text-muted-foreground">题</span>
+            </div>
+            <div className="text-xs text-muted-foreground mt-1">
+              {todayCount >= 20 ? '✅ 达标' : `还差 ${Math.max(0, 20 - todayCount)} 题达标`}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between">
+              <div className="text-xs font-medium text-muted-foreground">累计刷题</div>
+              <FileQuestion className="h-4 w-4 text-muted-foreground" />
+            </div>
+            <div className="mt-2 flex items-baseline gap-1">
+              <span className="text-3xl font-bold tabular-nums">{total}</span>
+              <span className="text-sm text-muted-foreground">题</span>
+            </div>
+            <div className="text-xs text-emerald-600 mt-1 flex items-center gap-1">
+              <TrendingUp className="h-3 w-3" /> 累计进度
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between">
+              <div className="text-xs font-medium text-muted-foreground">正确率</div>
+              <Target className="h-4 w-4 text-muted-foreground" />
+            </div>
+            <div className="mt-2 flex items-baseline gap-1">
+              <span className="text-3xl font-bold tabular-nums">{accuracy}</span>
+              <span className="text-sm text-muted-foreground">%</span>
+            </div>
+            <Progress value={accuracy} className="h-1.5 mt-2" />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between">
+              <div className="text-xs font-medium text-muted-foreground">错题待攻克</div>
+              <XCircle className="h-4 w-4 text-rose-500" />
+            </div>
+            <div className="mt-2 flex items-baseline gap-1">
+              <span className="text-3xl font-bold tabular-nums text-rose-500">{wrong}</span>
+              <span className="text-sm text-muted-foreground">道</span>
             </div>
             <Button
-              size="lg"
-              onClick={() => nav('/practice')}
-              className="bg-white text-primary hover:bg-white/90 shadow-lg self-start md:self-auto font-semibold"
+              variant="ghost"
+              size="sm"
+              className="h-6 px-2 text-xs text-rose-600 -ml-2 mt-1 hover:text-rose-700 hover:bg-rose-50"
+              onClick={() => nav('/wrong')}
             >
-              开始刷题
-              <ArrowRight className="h-4 w-4 ml-1" />
+              去复习 →
             </Button>
-          </div>
+          </CardContent>
+        </Card>
+      </div>
 
-          {/* Stats */}
-          <div className="mt-8 grid grid-cols-3 gap-3 md:gap-4">
-            {[
-              { label: '今日刷题', value: todayCount, unit: '题' },
-              { label: '累计刷题', value: total, unit: '题' },
-              { label: '正确率', value: accuracy, unit: '%' },
-            ].map((s) => (
-              <div
-                key={s.label}
-                className="rounded-xl bg-white/15 backdrop-blur p-4 md:p-5"
-              >
-                <div className="text-2xl md:text-4xl font-bold tabular-nums">
-                  {s.value}
-                  <span className="text-sm md:text-base font-normal ml-0.5 opacity-70">{s.unit}</span>
-                </div>
-                <div className="text-xs md:text-sm opacity-70 mt-1">{s.label}</div>
+      {/* Main Content Grid */}
+      <div className="grid lg:grid-cols-3 gap-6">
+        {/* 左侧：专项练习 */}
+        <div className="lg:col-span-2 space-y-6">
+          <Card>
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <BookOpen className="h-4 w-4" />
+                  专项练习
+                </CardTitle>
+                <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => nav('/practice')}>
+                  查看全部 <ArrowRight className="h-3 w-3 ml-1" />
+                </Button>
               </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <div className="grid sm:grid-cols-2 gap-3">
+                {subjects.map((s) => (
+                  <button
+                    key={s.key}
+                    onClick={() =>
+                      nav(`/practice/${encodeURIComponent(s.key)}`, { state: { name: s.name } })
+                    }
+                    className="group flex items-start gap-3 p-4 rounded-lg border bg-card hover:bg-muted/50 hover:border-primary/30 transition-all text-left"
+                  >
+                    <div className={cn('w-10 h-10 rounded-lg flex items-center justify-center text-lg text-white shrink-0', s.color)}>
+                      {s.emoji}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-sm">{s.name}</div>
+                      <div className="text-xs text-muted-foreground mt-0.5">{s.desc}</div>
+                      <div className="mt-2 flex items-center gap-2">
+                        <Progress value={s.progress} className="h-1 flex-1" />
+                        <span className="text-[10px] text-muted-foreground tabular-nums shrink-0">
+                          {s.progress}%
+                        </span>
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
 
-      {/* Features */}
-      <section>
-        <h2 className="text-lg font-semibold tracking-tight mb-4 px-1">功能中心</h2>
-        <div className="grid grid-cols-3 md:grid-cols-6 gap-3 md:gap-4">
-          {features.map((f) => {
-            const Icon = f.icon
-            const disabled = !f.to
-            return (
-              <button
-                key={f.title}
-                onClick={() => f.to && nav(f.to)}
-                disabled={disabled}
-                className={cn(
-                  'group relative flex flex-col items-center rounded-xl border bg-card p-4 shadow-sm transition-all',
-                  disabled
-                    ? 'opacity-50 cursor-not-allowed'
-                    : 'hover:-translate-y-0.5 hover:shadow-md cursor-pointer',
-                )}
-              >
-                <div className={cn('mb-2.5 flex h-12 w-12 md:h-14 md:w-14 items-center justify-center rounded-xl shadow-md', f.bg)}>
-                  <Icon className={cn('h-6 w-6 md:h-7 md:w-7', f.color)} />
-                </div>
-                <div className="text-sm font-medium">{f.title}</div>
-                <div className="text-xs text-muted-foreground mt-0.5 hidden md:block">{f.desc}</div>
-              </button>
-            )
-          })}
-        </div>
-      </section>
-
-      {/* Subjects + Side */}
-      <section className="grid md:grid-cols-3 gap-6">
-        {/* 专项练习 */}
-        <div className="md:col-span-2">
-          <div className="flex items-center justify-between mb-4 px-1">
-            <h2 className="text-lg font-semibold tracking-tight">专项练习</h2>
-            <Button variant="ghost" size="sm" className="gap-1 text-primary" onClick={() => nav('/practice')}>
-              全部 <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
-            {subjects.map((s) => (
-              <Card
-                key={s.name}
-                className="group cursor-pointer transition-all hover:-translate-y-0.5 hover:shadow-md border"
-                onClick={() =>
-                  nav(`/practice/${encodeURIComponent(s.key)}`, { state: { name: s.name } })
-                }
-              >
-                <CardContent className="p-5">
-                  <div className={cn('w-11 h-11 rounded-lg bg-gradient-to-br flex items-center justify-center text-white text-xl shadow-sm mb-3', s.color)}>
-                    {s.name[0]}
-                  </div>
-                  <div className="font-semibold text-sm md:text-base mb-1">{s.name}</div>
-                  <div className="text-xs text-muted-foreground mb-3">{s.desc}</div>
-                  <div className="text-xs text-primary font-medium flex items-center gap-0.5 opacity-60 group-hover:opacity-100 transition-opacity">
-                    开始练习 <ArrowRight className="h-3 w-3" />
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+          {/* 最近 7 天趋势 */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <BarChart3 className="h-4 w-4" />
+                近 7 天刷题趋势
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <div className="flex items-end gap-2 h-32">
+                {weeklyData.map((d, i) => {
+                  const height = d.count === 0 ? 4 : Math.max(12, (d.count / maxWeekCount) * 100)
+                  const isToday = i === 6
+                  return (
+                    <div key={i} className="flex-1 flex flex-col items-center gap-1.5">
+                      <div className="text-[10px] text-muted-foreground tabular-nums">{d.count || ''}</div>
+                      <div
+                        className={cn(
+                          'w-full rounded-t-md transition-all',
+                          isToday ? 'bg-primary' : 'bg-muted-foreground/20',
+                        )}
+                        style={{ height: `${height}%` }}
+                      />
+                      <div className={cn('text-[11px]', isToday ? 'text-primary font-medium' : 'text-muted-foreground')}>
+                        {d.day}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
-        {/* Side widgets */}
+        {/* 右侧：快捷功能 + 提示 */}
         <div className="space-y-4">
           <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm">快捷入口</CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0 space-y-1">
+              <Button
+                variant="ghost"
+                className="w-full justify-start h-10 font-normal text-sm"
+                onClick={() => nav('/practice')}
+              >
+                <Brain className="h-4 w-4 mr-2.5 text-indigo-500" />
+                随机抽题 10 道
+              </Button>
+              <Button
+                variant="ghost"
+                className="w-full justify-start h-10 font-normal text-sm"
+                onClick={() => nav('/wrong')}
+              >
+                <XCircle className="h-4 w-4 mr-2.5 text-rose-500" />
+                复习错题（{wrong}）
+              </Button>
+              <Button variant="ghost" className="w-full justify-start h-10 font-normal text-sm" disabled>
+                <Timer className="h-4 w-4 mr-2.5 text-amber-500" />
+                模拟考试
+                <Badge variant="secondary" className="ml-auto text-[10px]">
+                  即将上线
+                </Badge>
+              </Button>
+              <Button variant="ghost" className="w-full justify-start h-10 font-normal text-sm" disabled>
+                <Trophy className="h-4 w-4 mr-2.5 text-yellow-500" />
+                排行榜
+                <Badge variant="secondary" className="ml-auto text-[10px]">
+                  即将上线
+                </Badge>
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-indigo-50 via-violet-50 to-purple-50 border-indigo-100">
             <CardContent className="p-5">
-              <div className="flex items-center gap-2 text-sm font-semibold mb-3">
-                <span className="text-amber-500">📌</span>
+              <div className="flex items-center gap-2 text-sm font-semibold text-indigo-900 mb-2">
+                <CheckCircle2 className="h-4 w-4" />
                 今日建议
               </div>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li className="flex gap-2"><span className="text-primary">•</span>每天 20-30 道保持题感</li>
-                <li className="flex gap-2"><span className="text-primary">•</span>先专项再套题模考</li>
-                <li className="flex gap-2"><span className="text-primary">•</span>错题必复盘，搞懂考点</li>
+              <ul className="space-y-2 text-sm text-indigo-800/80">
+                <li className="flex gap-2">
+                  <Clock className="h-4 w-4 mt-0.5 shrink-0 text-indigo-400" />
+                  每天至少 20 道题保持题感
+                </li>
+                <li className="flex gap-2">
+                  <Target className="h-4 w-4 mt-0.5 shrink-0 text-indigo-400" />
+                  专项训练后再做套题模考
+                </li>
+                <li className="flex gap-2">
+                  <Brain className="h-4 w-4 mt-0.5 shrink-0 text-indigo-400" />
+                  错题必须看解析搞懂考点
+                </li>
               </ul>
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-amber-50 to-orange-50 border-amber-100">
+          <Card className="bg-zinc-900 text-white border-0">
             <CardContent className="p-5">
-              <Quote className="h-5 w-5 text-amber-500 mb-2" />
-              <p className="text-sm font-medium text-amber-900 italic leading-relaxed">
-                "道阻且长，行则将至；行而不辍，未来可期。"
+              <div className="text-xs text-zinc-500 mb-2 flex items-center gap-1">
+                <span className="text-indigo-400">"</span> 每日一句
+              </div>
+              <p className="text-sm leading-relaxed italic text-zinc-200">
+                道阻且长，行则将至；<br />行而不辍，未来可期。
               </p>
             </CardContent>
           </Card>
         </div>
-      </section>
+      </div>
     </div>
   )
 }

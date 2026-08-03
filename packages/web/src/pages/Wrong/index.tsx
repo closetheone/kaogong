@@ -1,9 +1,11 @@
 import { useMemo, useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { BookOpen, ChevronDown, ChevronUp, Trash2, PartyPopper } from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { BookX, ChevronDown, Trash2, PartyPopper, Search, Filter } from 'lucide-react'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
+import { Separator } from '@/components/ui/separator'
 import { cn } from '@/lib/utils'
 import type { Question } from '@/types'
 import { usePracticeStore } from '@/store/usePracticeStore'
@@ -20,6 +22,7 @@ export default function Wrong() {
   const [filter, setFilter] = useState('all')
   const [expanded, setExpanded] = useState<string | null>(null)
   const [questionCache, setQuestionCache] = useState<Record<string, Question>>({})
+  const [search, setSearch] = useState('')
 
   useEffect(() => {
     fetch('/data/2026行测真题.json')
@@ -36,22 +39,11 @@ export default function Wrong() {
     const wrong = records.filter((r) => !r.isCorrect)
     const map = new Map<string, WrongItem>()
     for (const r of wrong) {
-      const q =
-        questionCache[r.questionId] ||
-        ({
-          id: r.questionId,
-          content: '（题目详情暂无，请连接后端服务后查看）',
-          options: {},
-          answer: '',
-          explanation: '',
-          category: '未知',
-          source: '',
-          year: 0,
-          examType: '',
-          number: 0,
-          difficulty: 1,
-        } as Question)
-      map.set(r.questionId, { question: q, userAnswer: r.userAnswer, wrongTime: r.answeredAt })
+      const q = questionCache[r.questionId]
+      if (!q) continue
+      if (!map.has(r.questionId) || new Date(r.answeredAt) > new Date(map.get(r.questionId)!.wrongTime)) {
+        map.set(r.questionId, { question: q, userAnswer: r.userAnswer, wrongTime: r.answeredAt })
+      }
     }
     return Array.from(map.values())
   }, [records, questionCache])
@@ -61,145 +53,179 @@ export default function Wrong() {
     return ['all', ...Array.from(set)]
   }, [wrongList])
 
-  const filtered = filter === 'all' ? wrongList : wrongList.filter((w) => w.question.category === filter)
+  let filtered = filter === 'all' ? wrongList : wrongList.filter((w) => w.question.category === filter)
+  if (search) {
+    filtered = filtered.filter((w) => w.question.content.includes(search))
+  }
 
   return (
-    <div className="mx-auto max-w-3xl p-4 md:p-8 space-y-6">
-      {/* Header */}
-      <Card className="border-0 bg-gradient-to-r from-rose-500 to-red-600 text-white shadow-lg">
-        <CardContent className="p-6 md:p-8 flex items-center justify-between">
-          <div>
-            <div className="flex items-center gap-2 text-sm opacity-80 mb-1">
-              <BookOpen className="h-4 w-4" /> 错题本
-            </div>
-            <div className="flex items-end gap-3">
-              <span className="text-4xl md:text-5xl font-bold tabular-nums">{wrongList.length}</span>
-              <span className="text-sm opacity-80 pb-2">道待攻克</span>
-            </div>
-            <p className="text-sm opacity-80 mt-2">💡 每道错题都是提分机会</p>
-          </div>
-          <div className="text-5xl opacity-30 hidden md:block">❌</div>
-        </CardContent>
-      </Card>
-
-      {/* Filter Tabs */}
-      {wrongList.length > 0 && (
-        <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
-          {categories.map((cat) => (
-            <Button
-              key={cat}
-              variant={filter === cat ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setFilter(cat)}
-              className="rounded-full shrink-0"
-            >
-              {cat === 'all' ? '全部' : cat}
-            </Button>
-          ))}
+    <div className="p-6 md:p-8 max-w-5xl mx-auto space-y-6">
+      <div className="flex items-start justify-between">
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2">
+            <BookX className="h-6 w-6 text-rose-500" />
+            错题本
+          </h2>
+          <p className="text-sm text-muted-foreground mt-1">
+            共 {wrongList.length} 道错题 · 查漏补缺，精准提升
+          </p>
         </div>
-      )}
+        {wrongList.length > 0 && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-muted-foreground hover:text-destructive"
+            onClick={() => {
+              if (confirm('确定清空所有错题记录？')) resetAll()
+            }}
+          >
+            <Trash2 className="h-3.5 w-3.5 mr-1" /> 清空
+          </Button>
+        )}
+      </div>
 
-      {/* List */}
-      {filtered.length === 0 ? (
-        <Card className="text-center">
-          <CardContent className="py-16 md:py-24">
-            <PartyPopper className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
-            <p className="text-lg font-semibold mb-1">太棒了！</p>
-            <p className="text-sm text-muted-foreground mb-6">
-              {wrongList.length === 0 ? '还没有错题，去刷一组题吧' : '该分类暂无错题'}
-            </p>
-            {wrongList.length === 0 && (
-              <Button onClick={() => nav('/practice')}>开始刷题</Button>
-            )}
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="space-y-3">
-          {filtered.map((item) => {
-            const { question, userAnswer } = item
-            const isOpen = expanded === question.id
+      {/* Stats summary */}
+      {wrongList.length > 0 && (
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+          {categories.filter((c) => c !== 'all').map((cat) => {
+            const count = wrongList.filter((w) => w.question.category === cat).length
             return (
-              <Card key={question.id} className="overflow-hidden transition-shadow hover:shadow-md">
-                <button
-                  className="w-full text-left p-5"
-                  onClick={() => setExpanded(isOpen ? null : question.id)}
-                >
-                  <div className="flex flex-wrap items-center gap-2 mb-2.5">
-                    <Badge variant="error">{question.category || '未知'}</Badge>
-                    {question.subCategory && (
-                      <Badge variant="secondary" className="font-normal">
-                        {question.subCategory}
-                      </Badge>
-                    )}
-                    <span className="text-xs text-muted-foreground ml-auto">
-                      {new Date(item.wrongTime).toLocaleDateString('zh-CN')}
-                    </span>
-                  </div>
-                  <p className="text-sm md:text-[15px] text-foreground leading-relaxed line-clamp-2 whitespace-pre-wrap">
-                    {question.content}
-                  </p>
-                  <div className="mt-3 flex items-center gap-3 text-sm">
-                    <span className="flex items-center gap-1">
-                      <span className="text-xs text-muted-foreground">你的答案</span>
-                      <Badge variant="error" className="font-semibold">
-                        {userAnswer}
-                      </Badge>
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <span className="text-xs text-muted-foreground">正确答案</span>
-                      <Badge variant="success" className="font-semibold">
-                        {question.answer || '-'}
-                      </Badge>
-                    </span>
-                    <span className="ml-auto text-muted-foreground flex items-center text-xs">
-                      {isOpen ? (
-                        <>
-                          收起 <ChevronUp className="h-4 w-4" />
-                        </>
-                      ) : (
-                        <>
-                          解析 <ChevronDown className="h-4 w-4" />
-                        </>
-                      )}
-                    </span>
-                  </div>
-                </button>
-
-                {isOpen && question.explanation && (
-                  <div className="px-5 pb-5 pt-0">
-                    <div className="pt-4 border-t">
-                      <div className="text-sm font-semibold mb-2 flex items-center gap-1.5">
-                        📖 答案解析
-                      </div>
-                      <div className="text-sm text-muted-foreground leading-7 whitespace-pre-wrap bg-muted/50 rounded-lg p-4">
-                        {question.explanation.replace(/^公考[\s\S]*?\f/, '').trim()}
-                      </div>
-                    </div>
-                  </div>
+              <Card
+                key={cat}
+                className={cn(
+                  'cursor-pointer transition-colors',
+                  filter === cat ? 'border-primary bg-primary/[0.02]' : 'hover:bg-muted/50',
                 )}
+                onClick={() => setFilter(cat)}
+              >
+                <CardContent className="p-4 text-center">
+                  <div className="text-2xl font-bold text-rose-500 tabular-nums">{count}</div>
+                  <div className="text-xs text-muted-foreground mt-0.5 truncate">{cat}</div>
+                </CardContent>
               </Card>
             )
           })}
         </div>
       )}
 
+      {/* Search + Filter */}
       {wrongList.length > 0 && (
-        <div className="text-center pt-4">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-muted-foreground hover:text-destructive gap-1"
-            onClick={() => {
-              if (confirm('确定清空所有练习记录？此操作不可恢复')) {
-                resetAll()
-                setExpanded(null)
-              }
-            }}
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-            清空所有记录
-          </Button>
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="relative flex-1 max-w-sm">
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="搜索题目内容..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+          <div className="flex items-center gap-1.5">
+            <Filter className="h-4 w-4 text-muted-foreground" />
+            {categories.map((cat) => (
+              <Badge
+                key={cat}
+                variant={filter === cat ? 'default' : 'outline'}
+                className="cursor-pointer"
+                onClick={() => setFilter(cat)}
+              >
+                {cat === 'all' ? '全部' : cat}
+              </Badge>
+            ))}
+          </div>
         </div>
+      )}
+
+      {/* List */}
+      {wrongList.length === 0 ? (
+        <Card className="text-center">
+          <CardContent className="py-20">
+            <PartyPopper className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
+            <p className="text-lg font-semibold mb-1">太棒了！🎉</p>
+            <p className="text-sm text-muted-foreground mb-6">还没有错题，去刷一组题吧</p>
+            <Button onClick={() => nav('/practice')}>开始刷题</Button>
+          </CardContent>
+        </Card>
+      ) : filtered.length === 0 ? (
+        <Card>
+          <CardContent className="py-12 text-center text-muted-foreground text-sm">
+            没有匹配的错题
+          </CardContent>
+        </Card>
+      ) : (
+        <Card>
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <span>共 {filtered.length} 道错题</span>
+              <span>点击展开查看解析</span>
+            </div>
+            <Separator />
+          </CardHeader>
+          <CardContent className="p-0">
+            {filtered.map((item, idx) => {
+              const { question, userAnswer, wrongTime } = item
+              const isOpen = expanded === question.id
+              return (
+                <div key={question.id}>
+                  {idx > 0 && <Separator />}
+                  <button
+                    className="w-full text-left p-5 hover:bg-muted/40 transition-colors"
+                    onClick={() => setExpanded(isOpen ? null : question.id)}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="shrink-0 w-7 h-7 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center text-xs font-bold mt-0.5">
+                        {idx + 1}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap mb-2">
+                          <Badge variant="error">{question.category || '未知'}</Badge>
+                          {question.subCategory && (
+                            <Badge variant="outline" className="font-normal text-xs">
+                              {question.subCategory}
+                            </Badge>
+                          )}
+                          <span className="text-xs text-muted-foreground ml-auto">
+                            {new Date(wrongTime).toLocaleDateString('zh-CN')}
+                          </span>
+                        </div>
+                        <p className="text-sm leading-relaxed line-clamp-2 whitespace-pre-wrap text-foreground">
+                          {question.content}
+                        </p>
+                        <div className="flex items-center gap-3 mt-2 text-xs">
+                          <span className="text-muted-foreground">
+                            我的答案：<span className="text-rose-600 font-semibold">{userAnswer}</span>
+                          </span>
+                          <span className="text-muted-foreground">
+                            正确答案：<span className="text-emerald-600 font-semibold">{question.answer}</span>
+                          </span>
+                          <ChevronDown
+                            className={cn(
+                              'ml-auto h-4 w-4 text-muted-foreground transition-transform',
+                              isOpen && 'rotate-180',
+                            )}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </button>
+
+                  {isOpen && (
+                    <div className="px-5 pb-5 pt-0">
+                      <div className="ml-10 pl-4 border-l-2 border-rose-200">
+                        <div className="text-sm font-medium mb-2 flex items-center gap-1.5 text-rose-700">
+                          📖 答案解析
+                        </div>
+                        <div className="text-sm text-muted-foreground leading-7 whitespace-pre-wrap bg-muted/40 rounded-lg p-4">
+                          {question.explanation.replace(/^公考[\s\S]*?\f/, '').trim()}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </CardContent>
+        </Card>
       )}
     </div>
   )
