@@ -13,6 +13,9 @@ async function bootstrap() {
   
   // CORS
   app.enableCors();
+
+  // 全局 API 前缀
+  app.setGlobalPrefix('api');
   
   const port = process.env.PORT || 3000;
   await app.listen(port);
