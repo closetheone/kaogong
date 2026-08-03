@@ -7,3 +7,6 @@ dist/
 project.private.config.json
 tsconfig.tsbuildinfo
 .tsbuildinfo
+components.json
+tsconfig.tsbuildinfo
+dist/

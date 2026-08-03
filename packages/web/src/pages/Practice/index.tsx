@@ -1,7 +1,12 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { BookOpen, ChevronRight, Loader2 } from 'lucide-react'
+import { Card, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import type { Category } from '@/types'
 import { questionApi } from '@/utils/request'
+import { cn } from '@/lib/utils'
 
 const defaultCategories: Category[] = [
   { id: '常识判断', name: '常识判断', icon: '💡', count: 0 },
@@ -11,20 +16,12 @@ const defaultCategories: Category[] = [
   { id: '资料分析', name: '资料分析', icon: '📊', count: 0 },
 ]
 
-const subjectDesc: Record<string, string> = {
-  常识判断: '涵盖政治、法律、经济、历史、文化、地理等',
-  言语理解: '逻辑填空、片段阅读、语句表达',
-  数量关系: '数学运算、数字推理',
-  判断推理: '图形推理、定义判断、类比推理、逻辑判断',
-  资料分析: '文字、表格、图形资料综合分析',
-}
-
-const subjectColors: Record<string, string> = {
-  常识判断: 'from-amber-400 to-orange-500',
-  言语理解: 'from-blue-400 to-indigo-500',
-  数量关系: 'from-violet-400 to-purple-500',
-  判断推理: 'from-emerald-400 to-teal-500',
-  资料分析: 'from-rose-400 to-pink-500',
+const subjectMeta: Record<string, { desc: string; emoji: string; color: string }> = {
+  常识判断: { desc: '政治、法律、经济、历史、文化、地理、科技', emoji: '💡', color: 'from-amber-400 to-orange-500' },
+  言语理解: { desc: '逻辑填空、片段阅读、语句表达', emoji: '📖', color: 'from-blue-400 to-indigo-500' },
+  数量关系: { desc: '数学运算、数字推理', emoji: '🔢', color: 'from-violet-400 to-purple-500' },
+  判断推理: { desc: '图形推理、定义判断、类比推理、逻辑判断', emoji: '🧠', color: 'from-emerald-400 to-teal-500' },
+  资料分析: { desc: '文字、表格、图表资料综合分析', emoji: '📊', color: 'from-rose-400 to-pink-500' },
 }
 
 export default function Practice() {
@@ -33,90 +30,104 @@ export default function Practice() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const load = async () => {
-      try {
-        const counts = await questionApi.getCountByCategory()
+    questionApi
+      .getCountByCategory()
+      .then((counts) => {
         setCategories(
           defaultCategories.map((c) => ({
             ...c,
             count: counts[c.id] || counts[c.name] || 0,
           })),
         )
-      } catch {
-        // fallback
-      } finally {
-        setLoading(false)
-      }
-    }
-    load()
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false))
   }, [])
 
-  const handleStart = (category: Category) => {
-    nav(`/practice/${encodeURIComponent(category.id)}`, { state: { name: category.name } })
-  }
-
   return (
-    <div className="px-4 md:px-8 py-6 max-w-7xl mx-auto">
-      {/* 顶部 banner */}
-      <div className="mb-8">
-        <div className="rounded-2xl md:rounded-3xl bg-gradient-to-r from-indigo-600 to-violet-600 p-6 md:p-8 text-white">
-          <h1 className="text-xl md:text-2xl font-bold mb-2">专项刷题</h1>
-          <p className="text-sm md:text-base opacity-80">选择一个模块，开始 10 道一组的精练</p>
-        </div>
-      </div>
+    <div className="mx-auto max-w-6xl p-4 md:p-8 space-y-6">
+      {/* Banner */}
+      <Card className="border-0 bg-gradient-to-r from-primary to-violet-600 text-primary-foreground shadow-lg">
+        <CardContent className="p-6 md:p-8">
+          <div className="flex items-center gap-3 mb-2">
+            <BookOpen className="h-5 w-5" />
+            <h1 className="text-xl md:text-2xl font-bold tracking-tight">专项刷题</h1>
+          </div>
+          <p className="text-sm md:text-base opacity-80">
+            选择一个模块，开始 10 道一组的精练 · 2026 国考行测真题
+          </p>
+        </CardContent>
+      </Card>
 
       {/* 模块卡片 */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
-        {categories.map((cat) => (
-          <button
-            key={cat.id}
-            onClick={() => handleStart(cat)}
-            className="card-hover bg-white rounded-2xl p-5 md:p-6 text-left shadow-sm border border-gray-100 relative overflow-hidden group"
-          >
-            {/* 装饰色块 */}
-            <div className={`absolute -top-8 -right-8 w-24 h-24 rounded-full bg-gradient-to-br ${subjectColors[cat.name] || 'from-indigo-400 to-violet-500'} opacity-10 group-hover:opacity-20 transition-opacity`} />
-
-            <div className="relative flex items-start gap-4">
-              <div className={`w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-gradient-to-br ${subjectColors[cat.name] || 'from-indigo-400 to-violet-500'} flex items-center justify-center text-2xl md:text-3xl text-white shadow-lg shrink-0`}>
-                {cat.icon}
-              </div>
-              <div className="flex-1 min-w-0">
-                <h3 className="font-bold text-gray-900 text-base md:text-lg">{cat.name}</h3>
-                <p className="text-xs md:text-sm text-gray-500 mt-1 leading-relaxed">
-                  {subjectDesc[cat.name] || '精选真题'}
-                </p>
-                <div className="flex items-center gap-3 mt-3">
-                  <span className="text-xs text-gray-400">
-                    {cat.count > 0 ? `${cat.count} 题` : loading ? '加载中...' : '本地真题'}
-                  </span>
-                  <span className="text-xs text-indigo-600 font-medium group-hover:translate-x-1 transition-transform">
-                    开始练习 →
-                  </span>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {categories.map((cat) => {
+          const meta = subjectMeta[cat.name] || { desc: '', emoji: '📝', color: 'from-gray-400 to-gray-500' }
+          return (
+            <Card
+              key={cat.id}
+              className="group cursor-pointer border transition-all hover:-translate-y-0.5 hover:shadow-md overflow-hidden"
+              onClick={() =>
+                nav(`/practice/${encodeURIComponent(cat.id)}`, { state: { name: cat.name } })
+              }
+            >
+              <CardContent className="p-5 md:p-6 flex gap-4 items-start relative">
+                <div
+                  className={cn(
+                    'shrink-0 w-14 h-14 md:w-16 md:h-16 rounded-2xl flex items-center justify-center text-2xl md:text-3xl text-white shadow-lg bg-gradient-to-br',
+                    meta.color,
+                  )}
+                >
+                  {meta.emoji}
                 </div>
-              </div>
-            </div>
-          </button>
-        ))}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-semibold text-base md:text-lg">{cat.name}</h3>
+                    {cat.count > 0 ? (
+                      <Badge variant="secondary" className="font-normal">
+                        {cat.count} 题
+                      </Badge>
+                    ) : loading ? (
+                      <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+                    ) : (
+                      <Badge variant="outline" className="font-normal">
+                        本地真题
+                      </Badge>
+                    )}
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-1 leading-relaxed">{meta.desc}</p>
+                  <div className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-primary opacity-70 group-hover:opacity-100 transition-opacity">
+                    开始练习 <ChevronRight className="h-4 w-4" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )
+        })}
       </div>
 
       {/* 提示 */}
-      <div className="mt-8 bg-white rounded-2xl p-5 md:p-6 shadow-sm border border-gray-100">
-        <h3 className="font-bold text-gray-900 text-sm md:text-base mb-3">💡 刷题建议</h3>
-        <div className="grid md:grid-cols-3 gap-4 text-sm text-gray-600">
-          <div className="flex gap-2">
-            <span className="text-indigo-500 font-bold">1</span>
-            <span>按模块循序渐进，先攻强项再补弱项</span>
+      <Card className="bg-muted/40 border-dashed">
+        <CardContent className="p-5 md:p-6">
+          <h3 className="font-semibold text-sm mb-3 flex items-center gap-2">
+            <span>💡</span> 刷题建议
+          </h3>
+          <div className="grid md:grid-cols-3 gap-4 text-sm text-muted-foreground">
+            <div className="flex gap-2">
+              <span className="text-primary font-bold">1</span>
+              <span>按模块循序渐进，先攻强项再补弱项</span>
+            </div>
+            <div className="flex gap-2">
+              <span className="text-primary font-bold">2</span>
+              <span>每题控制 1-2 分钟，培养时间感</span>
+            </div>
+            <div className="flex gap-2">
+              <span className="text-primary font-bold">3</span>
+              <span>错题必须看解析，理解比记答案重要</span>
+            </div>
           </div>
-          <div className="flex gap-2">
-            <span className="text-indigo-500 font-bold">2</span>
-            <span>每题控制在 1-2 分钟内，培养时间感</span>
-          </div>
-          <div className="flex gap-2">
-            <span className="text-indigo-500 font-bold">3</span>
-            <span>错题必须看解析，理解比记答案重要</span>
-          </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }
