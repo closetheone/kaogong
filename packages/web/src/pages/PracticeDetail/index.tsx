@@ -20,6 +20,7 @@ import { cn } from '@/lib/utils'
 import type { Question } from '@/types'
 import { questionApi } from '@/utils/request'
 import { usePracticeStore } from '@/store/usePracticeStore'
+import { useUserStore } from '@/store/useUserStore'
 
 const QUESTIONS_PER_SESSION = 10
 
@@ -49,7 +50,8 @@ export default function PracticeDetail() {
   const [flagged, setFlagged] = useState<Set<number>>(new Set())
   const [elapsed, setElapsed] = useState(0)
 
-  const { addRecord } = usePracticeStore()
+  const { addRecord, submitAnswer } = usePracticeStore()
+  const userId = useUserStore((s) => s.userId)
 
   // Timer
   useEffect(() => {
@@ -100,16 +102,25 @@ export default function PracticeDetail() {
     setAnswers({ ...answers, [currentIndex]: key })
   }
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!currentAnswer || !currentQ) return
     setSubmitted({ ...submitted, [currentIndex]: true })
+
+    // 先本地记录（确保 UI 响应）
+    const isCorrect = currentAnswer === currentQ.answer
     addRecord({
       questionId: currentQ.id,
       userAnswer: currentAnswer,
-      isCorrect: currentAnswer === currentQ.answer,
+      isCorrect,
       timeSpent: 0,
       answeredAt: new Date().toISOString(),
+      category: currentQ.category,
     })
+
+    // 提交到后端（不阻塞 UI）
+    if (userId && !userId.startsWith('local_')) {
+      submitAnswer(userId, currentQ.id, currentAnswer).catch(() => {})
+    }
   }
 
   const goTo = (idx: number) => {

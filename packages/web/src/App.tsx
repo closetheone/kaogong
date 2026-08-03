@@ -23,6 +23,7 @@ import PracticeResult from '@/pages/PracticeDetail/result'
 import Wrong from '@/pages/Wrong'
 import Profile from '@/pages/Profile'
 import { useUserStore } from '@/store/useUserStore'
+import { useEffect } from 'react'
 
 const navItems = [
   { to: '/', label: '仪表盘', icon: LayoutDashboard },
@@ -234,6 +235,12 @@ function MobileTabBar() {
 }
 
 function Layout() {
+  const ensureUser = useUserStore((s) => s.ensureUser)
+
+  useEffect(() => {
+    ensureUser()
+  }, [ensureUser])
+
   return (
     <div className="min-h-screen flex bg-background">
       {/* Desktop Sidebar */}

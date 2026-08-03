@@ -22,6 +22,7 @@ import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { usePracticeStore } from '@/store/usePracticeStore'
 import { useUserStore } from '@/store/useUserStore'
+import { userApi } from '@/utils/request'
 import { cn } from '@/lib/utils'
 
 const subjects = [
@@ -72,13 +73,45 @@ export default function Home() {
   const { records } = usePracticeStore()
   const { nickname, targetExam } = useUserStore()
   const [todayCount, setTodayCount] = useState(0)
+  const [total, setTotal] = useState(0)
+  const [accuracy, setAccuracy] = useState(0)
+  const [wrong, setWrong] = useState(0)
   const [streakDays, setStreakDays] = useState(0)
   const [weeklyData, setWeeklyData] = useState<{ day: string; count: number }[]>([])
+  const userId = useUserStore((s) => s.userId)
+  const isLoaded = useUserStore((s) => s.isLoaded)
 
+  // 从后端拉统计，失败则用本地
+  useEffect(() => {
+    if (!isLoaded) return
+    const isLocal = !userId || userId.startsWith('local_')
+    if (isLocal) return
+
+    userApi.getStats(userId).then((stats) => {
+      setTotal(stats.totalPractice || 0)
+      setAccuracy(Math.round(stats.accuracy || 0))
+      setWrong(stats.wrongCount || 0)
+      setTodayCount(stats.todayPractice || 0)
+    }).catch(() => {})
+
+    userApi.getDailyStats && userApi
+      .getDailyStats(userId, 7)
+      .then((data) => {
+        if (Array.isArray(data)) {
+          const days = ['日','一','二','三','四','五','六']
+          setWeeklyData(data.map(d => ({
+            day: days[new Date(d.date).getDay()],
+            count: d.total,
+          })))
+        }
+      }).catch(() => {})
+  }, [userId, isLoaded])
+
+  // 本地统计 fallback（当后端不可用时覆盖 state）
   useEffect(() => {
     const today = new Date()
     const todayStr = today.toDateString()
-    setTodayCount(records.filter((r) => new Date(r.answeredAt).toDateString() === todayStr).length)
+    const localToday = records.filter((r) => new Date(r.answeredAt).toDateString() === todayStr).length
 
     // 连续打卡
     const days = new Set(records.map((r) => new Date(r.answeredAt).toDateString()))
@@ -90,25 +123,34 @@ export default function Home() {
     }
     setStreakDays(streak)
 
-    // 最近7天数据
-    const week = []
-    for (let i = 6; i >= 0; i--) {
-      const day = new Date()
-      day.setDate(day.getDate() - i)
-      const dayStr = day.toDateString()
-      const count = records.filter((r) => new Date(r.answeredAt).toDateString() === dayStr).length
-      week.push({
-        day: ['日', '一', '二', '三', '四', '五', '六'][day.getDay()],
-        count,
-      })
-    }
-    setWeeklyData(week)
-  }, [records])
+    // 如果本地是 local_ 用户或无数据，用本地记录覆盖
+    if (!userId || userId.startsWith('local_')) {
+      setTodayCount(localToday)
+      const localTotal = records.length
+      const localCorrect = records.filter((r) => r.isCorrect).length
+      setTotal(localTotal)
+      setAccuracy(localTotal > 0 ? Math.round((localCorrect / localTotal) * 100) : 0)
+      setWrong(records.filter((r) => !r.isCorrect).length)
 
-  const total = records.length
-  const correct = records.filter((r) => r.isCorrect).length
-  const accuracy = total > 0 ? Math.round((correct / total) * 100) : 0
-  const wrong = records.filter((r) => !r.isCorrect).length
+      // 最近7天
+      const week = []
+      for (let i = 6; i >= 0; i--) {
+        const day = new Date()
+        day.setDate(day.getDate() - i)
+        const cnt = records.filter((r) => new Date(r.answeredAt).toDateString() === day.toDateString()).length
+        week.push({
+          day: ['日', '一', '二', '三', '四', '五', '六'][day.getDay()],
+          count: cnt,
+        })
+      }
+      setWeeklyData(week)
+    } else {
+      // 后端用户，today 用本地补充
+      setTodayCount(localToday)
+    }
+  }, [records, userId])
+
+  const correct = Math.round((total * accuracy) / 100)
 
   const maxWeekCount = Math.max(...weeklyData.map((d) => d.count), 10)
 
