@@ -348,7 +348,7 @@ export default function Home() {
             </CardContent>
           </Card>
 
-          <Card className="bg-zinc-900 text-white border-0">
+          <Card className="bg-zinc-900 text-white border-0 dark:bg-card dark:text-foreground dark:border">
             <CardContent className="p-5">
               <div className="text-xs text-zinc-500 mb-2 flex items-center gap-1">
                 <span className="text-indigo-400">"</span> 每日一句

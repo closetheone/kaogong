@@ -50,8 +50,8 @@ export default function PracticeResult() {
   const offset = circumference - (accuracy / 100) * circumference
 
   return (
-    <div className="bg-zinc-50 min-h-screen">
-      <header className="sticky top-0 z-30 border-b bg-white">
+    <div className="bg-background min-h-screen">
+      <header className="sticky top-0 z-30 border-b bg-background">
         <div className="max-w-3xl mx-auto px-4 h-14 flex items-center">
           <Button variant="ghost" size="sm" onClick={() => nav('/')} className="-ml-2 gap-1">
             <ArrowLeft className="h-4 w-4" />

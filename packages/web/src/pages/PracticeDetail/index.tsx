@@ -172,9 +172,9 @@ export default function PracticeDetail() {
   const availableKeys = optionKeys.filter((k) => currentQ.options?.[k] !== undefined)
 
   return (
-    <div className="bg-white min-h-screen">
+    <div className="bg-background min-h-screen">
       {/* Top Bar */}
-      <header className="sticky top-0 z-30 border-b bg-white">
+      <header className="sticky top-0 z-30 border-b bg-background">
         <div className="max-w-6xl mx-auto px-4 md:px-8 h-14 flex items-center justify-between">
           <Button variant="ghost" size="sm" onClick={() => nav('/practice')} className="-ml-2 gap-1">
             <ArrowLeft className="h-4 w-4" />
@@ -423,7 +423,7 @@ export default function PracticeDetail() {
       </div>
 
       {/* 移动端底部小题号 */}
-      <div className="md:hidden fixed bottom-16 left-0 right-0 z-30 border-t bg-white px-4 py-2">
+      <div className="md:hidden fixed bottom-16 left-0 right-0 z-30 border-t bg-background px-4 py-2">
         <div className="flex gap-1 overflow-x-auto pb-1">
           {questions.map((q, i) => {
             const a = answers[i]
